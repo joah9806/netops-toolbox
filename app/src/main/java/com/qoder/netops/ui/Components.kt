@@ -122,7 +122,7 @@ fun AppTopBar() {
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Text(
-                    text = "v1.0",
+                    text = "v1.0.1",
                     modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
                     fontFamily = MonoFamily,
                     fontSize = 9.sp,

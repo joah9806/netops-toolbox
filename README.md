@@ -3,8 +3,8 @@
 一个单机运行的 Android 网络运维工具箱：Ping 连通性、TCP 端口探测、局域网设备扫描。界面为黑白终端风格，默认白色主题，跟随系统自动切换深色模式；应用图标为白底黑色 `>_`。
 
 - 包名：`com.qoder.netops`
-- 版本：1.0.0（versionCode 1）
-- 安装包：[GitHub Releases · v1.0.0](https://github.com/joah9806/netops-toolbox/releases/tag/v1.0.0)
+- 版本：1.0.1（versionCode 2）
+- 安装包：[GitHub Releases · v1.0.1](https://github.com/joah9806/netops-toolbox/releases/tag/v1.0.1)
 - 最低系统：Android 8.0（API 26），targetSdk 35
 
 ## 功能
@@ -34,6 +34,16 @@
 - 白色/米白主界面，深色模式自动跟随系统。
 - 自适应图标（含 Android 13 主题图标单色层）：白底、黑色 `>_`。
 - 底部三栏切换；所有网络操作均由前台页面发起，无后台常驻服务。
+- 键盘弹出时端口页自动滚动到当前输入框，并暂时收起底部导航，避免输入区域被遮挡。
+
+## 更新日志
+
+### v1.0.1
+- 修复端口输入框在键盘弹出时被遮挡：端口页改为可滚动，聚焦端口输入框时自动滚动到可见位置。
+- 键盘弹出时收起底部导航，为输入区域释放更多空间。
+
+### v1.0.0
+- 首个公开版本：Ping、TCP 端口探测、局域网扫描。
 
 ## 截图
 
@@ -47,10 +57,10 @@
 
 ## 安装
 
-从 [Releases](https://github.com/joah9806/netops-toolbox/releases/latest) 下载 `NetOpsToolbox-1.0.0.apk`，或：
+从 [Releases](https://github.com/joah9806/netops-toolbox/releases/latest) 下载 `NetOpsToolbox-1.0.1.apk`，或：
 
 ```bash
-adb install -r NetOpsToolbox-1.0.0.apk
+adb install -r NetOpsToolbox-1.0.1.apk
 ```
 
 也可以把 APK 复制到手机，在文件管理器中打开并允许“安装未知应用”。
@@ -59,7 +69,7 @@ adb install -r NetOpsToolbox-1.0.0.apk
 
 - 证书：`CN=NetOps Toolbox, OU=Personal, O=NetOps, L=Shanghai, ST=Shanghai, C=CN`
 - 证书 SHA-256：`e1c1d2439bd6e465f5da85ceb72b74446b53cebdedd67651661b14c0a1388fe1`
-- APK SHA-256：`23c7527b599e20f1e8865649c44c905cd7ba810163c8b0bbc5bc430dd1a488b0`
+- APK SHA-256：`6bc8447013fe210a41ac46d943e5b53bbfc4d73b54f277cbc0c519d9abe18453`
 
 仓库不包含签名密钥和本地 SDK 配置。自行签名时，请生成 keystore 并配置 `keystore.properties`；正式分发前建议替换为你自己的签名。
 
@@ -90,7 +100,7 @@ gradle assembleRelease
 - 在项目根目录创建 `local.properties`，设置 `sdk.dir` 指向本机 Android SDK。
 - release 签名配置从 `keystore.properties` 读取，keystore 路径相对项目根目录。
 - 构建产物：`app/build/outputs/apk/release/app-release.apk`
-- 发布包：`NetOpsToolbox-1.0.0.apk`（约 6.3 MB）
+- 发布包：`NetOpsToolbox-1.0.1.apk`（约 6.3 MB）
 
 测试：
 

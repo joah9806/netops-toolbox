@@ -1,32 +1,46 @@
 package com.qoder.netops.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.qoder.netops.core.PortResult
@@ -49,127 +63,143 @@ private val presets = listOf(
     PortPreset("1-1024", "1-1024")
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PortScreen(vm: PortViewModel = viewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val openCount = state.results.count { it.status == PortStatus.OPEN }
+    val listState = rememberLazyListState()
+    val portsRequester = remember { BringIntoViewRequester() }
+    var portsFocused by remember { mutableStateOf(false) }
+    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
 
-    Column(
-        Modifier
+    LaunchedEffect(portsFocused, imeBottom) {
+        if (portsFocused && imeBottom > 0) {
+            delay(160)
+            portsRequester.bringIntoView()
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 20.dp),
+        state = listState,
+        contentPadding = PaddingValues(bottom = 12.dp)
     ) {
-        Spacer(Modifier.height(10.dp))
-        ScreenHeader(
-            eyebrow = "TOOL 02 / TCP",
-            title = "端口连通性",
-            description = "通过 TCP 握手检测端口开放状态，支持多端口、范围与 Banner 识别。"
-        )
-        Spacer(Modifier.height(14.dp))
+        item {
+            Spacer(Modifier.height(10.dp))
+            ScreenHeader(
+                eyebrow = "TOOL 02 / TCP",
+                title = "端口连通性",
+                description = "通过 TCP 握手检测端口开放状态，支持多端口、范围与 Banner 识别。"
+            )
+            Spacer(Modifier.height(14.dp))
+        }
 
-        CardSurface {
-            Column(Modifier.padding(14.dp)) {
-                MonoField(
-                    value = state.host,
-                    onValueChange = vm::onHostChange,
-                    label = "主机 / 域名",
-                    placeholder = "192.168.1.1 或 example.com",
-                    enabled = !state.running,
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next
-                )
-                Spacer(Modifier.height(10.dp))
-                MonoField(
-                    value = state.portsInput,
-                    onValueChange = vm::onPortsChange,
-                    label = "端口列表",
-                    placeholder = "22,80,443 或 1-1024",
-                    enabled = !state.running,
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Done
-                )
-                Spacer(Modifier.height(10.dp))
-                ChipsRow {
-                    presets.forEach { preset ->
-                        MiniChip(
-                            label = preset.label,
-                            enabled = !state.running,
-                            onClick = { vm.applyPreset(preset.value) }
+        item {
+            CardSurface {
+                Column(Modifier.padding(14.dp)) {
+                    MonoField(
+                        value = state.host,
+                        onValueChange = vm::onHostChange,
+                        label = "主机 / 域名",
+                        placeholder = "192.168.1.1 或 example.com",
+                        enabled = !state.running,
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    MonoField(
+                        value = state.portsInput,
+                        onValueChange = vm::onPortsChange,
+                        label = "端口列表",
+                        placeholder = "22,80,443 或 1-1024",
+                        modifier = Modifier
+                            .bringIntoViewRequester(portsRequester)
+                            .onFocusChanged { portsFocused = it.isFocused },
+                        enabled = !state.running,
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    ChipsRow {
+                        presets.forEach { preset ->
+                            MiniChip(
+                                label = preset.label,
+                                enabled = !state.running,
+                                onClick = { vm.applyPreset(preset.value) }
+                            )
+                        }
+                    }
+                    state.error?.let { message ->
+                        Spacer(Modifier.height(9.dp))
+                        Text(
+                            text = "! $message",
+                            fontFamily = MonoFamily,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
-                }
-                state.error?.let { message ->
-                    Spacer(Modifier.height(9.dp))
-                    Text(
-                        text = "! $message",
-                        fontFamily = MonoFamily,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.error
+                    Spacer(Modifier.height(12.dp))
+                    PrimaryActionButton(
+                        label = "开始探测",
+                        running = state.running,
+                        enabled = state.running || state.host.isNotBlank(),
+                        onClick = { if (state.running) vm.stop() else vm.start() }
                     )
                 }
-                Spacer(Modifier.height(12.dp))
-                PrimaryActionButton(
-                    label = "开始探测",
-                    running = state.running,
-                    enabled = state.running || state.host.isNotBlank(),
-                    onClick = { if (state.running) vm.stop() else vm.start() }
-                )
             }
         }
 
         if (state.running || state.message != null) {
-            Spacer(Modifier.height(10.dp))
-            PortProgressCard(state, openCount)
+            item {
+                Spacer(Modifier.height(10.dp))
+                PortProgressCard(state, openCount)
+            }
         }
 
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("探测结果", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.width(8.dp))
-            if (openCount > 0) {
-                val palette = netOpsPalette()
-                StatusPill(
-                    text = "$openCount OPEN",
-                    color = palette.success,
-                    container = palette.successContainer
-                )
+        item {
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("探测结果", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.width(8.dp))
+                if (openCount > 0) {
+                    val palette = netOpsPalette()
+                    StatusPill(
+                        text = "$openCount OPEN",
+                        color = palette.success,
+                        container = palette.successContainer
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                if (state.total > 0) {
+                    Text(
+                        text = "${state.completed} / ${state.total}",
+                        fontFamily = MonoFamily,
+                        fontSize = 9.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Spacer(Modifier.weight(1f))
-            if (state.total > 0) {
-                Text(
-                    text = "${state.completed} / ${state.total}",
-                    fontFamily = MonoFamily,
-                    fontSize = 9.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Spacer(Modifier.height(8.dp))
         }
-        Spacer(Modifier.height(8.dp))
 
         if (state.results.isEmpty()) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
+            item {
                 EmptyPanel(
                     title = if (state.running) "正在探测" else "暂无结果",
                     hint = if (state.running) {
                         "端口结果会随着握手完成实时出现。"
                     } else {
                         "输入目标主机与端口后开始探测，开放端口会标记为绿色。"
-                    }
+                    },
+                    modifier = Modifier.heightIn(min = 220.dp)
                 )
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 12.dp)
-            ) {
-                items(state.results, key = { it.port }) { result ->
+            items(state.results, key = { it.port }) { result ->
+                Box(Modifier.padding(bottom = 8.dp)) {
                     PortResultRow(result)
                 }
             }
